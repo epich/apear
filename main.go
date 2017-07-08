@@ -1,5 +1,3 @@
-// Requires installation of timidity
-
 package main
 
 import (
@@ -10,6 +8,8 @@ import (
 	"github.com/rakyll/portmidi"
 )
 
+// TODO: Constants, such as for volume
+
 func main() {
 	portmidi.Initialize()
 	fmt.Printf("CountDevices: %v\n", portmidi.CountDevices())
@@ -18,23 +18,27 @@ func main() {
 	for device := 0; device < portmidi.CountDevices(); device++ {
 		fmt.Printf("Info: %v %+v\n", device, portmidi.Info(portmidi.DeviceID(device)))
 	}
+	// TODO: Instead of hardcoded 2, search the portmidi.Info for the
+	// first port which is not Midi Through Port-0 and
+	// IsOutputAvailable.
 	out, err := portmidi.NewOutputStream(2, 1024, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// note on events to play C major chord
-	// out.WriteShort(0x90, 60, 100)
+	out.WriteShort(
+		0x90, // Note on
+		60,   // Middle C
+		100)  // Volume
+	time.Sleep(1 * time.Second)
 	out.WriteShort(0x90, 64, 100)
-	// out.WriteShort(0x90, 67, 100)
-
-	// notes will be sustained for 2 seconds
-	time.Sleep(2 * time.Second)
-
-	// note off events
-	// out.WriteShort(0x80, 60, 100)
+	time.Sleep(1 * time.Second)
+	out.WriteShort(
+		0x80, // Note off
+		60,
+		100)
+	// Note off, E, 100 volume
 	out.WriteShort(0x80, 64, 100)
-	// out.WriteShort(0x80, 67, 100)
 
 	out.Close()
 
