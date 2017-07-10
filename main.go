@@ -55,6 +55,12 @@ func main() {
 		},
 		portmidi.Event {
 			Timestamp: portmidi.Timestamp(t0),
+			Status: 0xC0,  // Program Change, channel 0
+			Data1: 0,  // Acoustic Grand Piano
+			Data2: 0,
+		},
+		portmidi.Event {
+			Timestamp: portmidi.Timestamp(t0),
 			Status: 0xC1,  // Program Change, channel 1
 			Data1: 59,  // Muted trumpet
 			Data2: 0,
