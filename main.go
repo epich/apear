@@ -16,10 +16,6 @@ import (
 // Verbosely on pitch bends: http://www.infocellar.com/sound/midi/pitch-bends.htm
 
 const Volume = 127
-// Latency when opening midi output stream. Greater than 0 so as
-// timestamp in events are honored. See portmidi Pm_OpenOutput doc on
-// 'latency'.
-const Latency = 1
 
 func main() {
 	portmidi.Initialize()
@@ -32,89 +28,115 @@ func main() {
 	// TODO: Instead of hardcoded 2, search the portmidi.Info for the
 	// first port which is not Midi Through Port-0 and
 	// IsOutputAvailable.
-	out, err := portmidi.NewOutputStream(2, 1024, Latency)
+	out, err := portmidi.NewOutputStream(
+		2,
+		1024,
+		// Latency when opening midi output stream.
+		//
+		// Using 0 means MIDI events are sent right away, but timestamps
+		// are not honored.
+		//
+		// Using 1 means 1ms delay before MIDI events are sent, but
+		// timestamps are honored. Care is necessary to send all note
+		// offs, pitch bend resets, etc, because fluidsynth will persist
+		// those across MIDI stream sessions (but not across restarts of
+		// fluidsynth).
+		//
+		// The portmidi Pm_OpenOutput doc on has more on this 'latency'
+		// field.
+		0)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t0 := portmidi.Timestamp(portmidi.Time())
-	out.Write([]portmidi.Event{
-		// Set up for pitch bends
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0),
-			Status: 0xB0,  // Control Change
-			Data1: 0x64,  // controller number for RPN LSB
-			Data2: 0x00,  // controller value (0x7F would reset)
-		},
-		// Set up for pitch bends
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0),
-			Status: 0xB0,  // Control Change
-			Data1: 0x65,  // controller number for RPN MSB
-			Data2: 0x00,  // controller value (0x7F would reset)
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0),
-			Status: 0xC0,  // Program Change, channel 0
-			Data1: 0,  // Acoustic Grand Piano
-			Data2: 0,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0),
-			Status: 0xC1,  // Program Change, channel 1
-			Data1: 59,  // Muted trumpet
-			Data2: 0,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0),
-			Status: 0x90,  // Note on, channel 0
-			Data1: 60,  // C4
-			Data2: Volume,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+1000),
-			Status: 0x91,  // Note on, channel 1
-			Data1: 64,  // E4
-			Data2: Volume,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+1000),
-			Status: 0x90,  // Note on, channel 0
-			Data1: 67,  // G
-			Data2: Volume,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+1100),
-			Status: 0x81,  // Note off
-			Data1: 64,  // E
-			Data2: Volume,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+2000),
-			Status: 0x80,  // Note off
-			Data1: 60,  // C
-			Data2: Volume,
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+2000),
-			Status: 0xB0,  // Control Change
-			Data1: 0x06,  // controller number for Data Entry
-			Data2: 24,  // Pitch bend + or - 12 semitones
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+2000),
-			Status: 0xE0,  // Pitch bend
-			Data1: 0x00,  // LSB
-			Data2: 0x00,  // MSB
-		},
-		portmidi.Event {
-			Timestamp: portmidi.Timestamp(t0+3000),
-			Status: 0x80,  // Note off
-			Data1: 67,  // G
-			Data2: Volume,
-		},
-	})
-	time.Sleep(4 * time.Second)
+	out.WriteShort(0xC0, 0, 0)
+	out.WriteShort(0x90, 60, Volume)
+	time.Sleep(1 * time.Second)
+	out.WriteShort(0x80, 60, Volume)
+	time.Sleep(1 * time.Second)
+	out.WriteShort(0x90, 64, Volume)
+	time.Sleep(1 * time.Second)
+	out.WriteShort(0x80, 64, Volume)
+	time.Sleep(2 * time.Second)
+	
+	// t0 := portmidi.Timestamp(portmidi.Time())
+	// out.Write([]portmidi.Event{
+	// 	// Set up for pitch bends
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0),
+	// 		Status: 0xB0,  // Control Change
+	// 		Data1: 0x64,  // controller number for RPN LSB
+	// 		Data2: 0x00,  // controller value (0x7F would reset)
+	// 	},
+	// 	// Set up for pitch bends
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0),
+	// 		Status: 0xB0,  // Control Change
+	// 		Data1: 0x65,  // controller number for RPN MSB
+	// 		Data2: 0x00,  // controller value (0x7F would reset)
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0),
+	// 		Status: 0xC0,  // Program Change, channel 0
+	// 		Data1: 4,
+	// 		Data2: 0,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0),
+	// 		Status: 0xC1,  // Program Change, channel 1
+	// 		Data1: 59,  // Muted trumpet
+	// 		Data2: 0,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0),
+	// 		Status: 0x90,  // Note on, channel 0
+	// 		Data1: 60,  // C4
+	// 		Data2: Volume,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+1000),
+	// 		Status: 0x91,  // Note on, channel 1
+	// 		Data1: 64,  // E4
+	// 		Data2: Volume,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+1000),
+	// 		Status: 0x90,  // Note on, channel 0
+	// 		Data1: 67,  // G
+	// 		Data2: Volume,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+1100),
+	// 		Status: 0x81,  // Note off
+	// 		Data1: 64,  // E
+	// 		Data2: Volume,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+2000),
+	// 		Status: 0x80,  // Note off
+	// 		Data1: 60,  // C
+	// 		Data2: Volume,
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+2000),
+	// 		Status: 0xB0,  // Control Change
+	// 		Data1: 0x06,  // controller number for Data Entry
+	// 		Data2: 24,  // Pitch bend + or - 12 semitones
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+2000),
+	// 		Status: 0xE0,  // Pitch bend
+	// 		Data1: 0x00,  // LSB
+	// 		Data2: 0x00,  // MSB
+	// 	},
+	// 	portmidi.Event {
+	// 		Timestamp: portmidi.Timestamp(t0+3000),
+	// 		Status: 0x80,  // Note off
+	// 		Data1: 67,  // G
+	// 		Data2: Volume,
+	// 	},
+	// })
+	// time.Sleep(3 * time.Second)
 
 	out.Close()
 
