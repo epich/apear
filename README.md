@@ -6,13 +6,13 @@ Install prerequisites:
     - Timidity++
       - sudo apt-get install timidity
       - Play MIDI-FILE: timidity MIDI-FILE
-      - Start as daemon: timidity -iA -A100 -Os
+      - Start as daemon: See synth.sh
       - Problems:
         - Scratchy sound
     - FluidSynth
       - sudo apt-get install fluidsynth fluid-soundfont-gs
       - Play MIDI-FILE: fluidsynth -a alsa -m alsa_seq -g2 -i /usr/share/sounds/sf2/FluidR3_GM.sf2 MIDI-FILE
-      - Start as daemon: fluidsynth -a alsa -m alsa_seq -g2 -s -i /usr/share/sounds/sf2/FluidR3_GM.sf2
+      - Start as daemon: See synth.sh
       - Problems:
         - Low values of -g are low volume, high values are scratchy.
         - Inexplicably gets persistently mangled notes when experimenting with -g.

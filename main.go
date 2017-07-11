@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/rakyll/portmidi"
@@ -17,7 +20,16 @@ import (
 
 const Volume = 127
 
+func getTtyConfig() string {
+	ttyConfig, err := exec.Command("stty", "-F", "/dev/tty", "-g").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(ttyConfig)
+}
+
 func main() {
+	fmt.Printf("Started at %v\n", time.Now().Format(time.RFC3339Nano))
 	portmidi.Initialize()
 	fmt.Printf("CountDevices: %v\n", portmidi.CountDevices())
 	fmt.Printf("DefaultInputDevice: %v\n", portmidi.DefaultInputDeviceID())
@@ -49,6 +61,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	ttyOrig := getTtyConfig()
+	fmt.Printf("Original tty config: %s", ttyOrig)
+	exec.Command("stty", "-F", "/dev/tty", "-icanon", "min", "1").Run()
+	defer exec.Command("stty", "-F", "/dev/tty", strings.TrimSpace(ttyOrig)).Run()
+	var b []byte = make([]byte, 1)
+	fmt.Print("Enter text: ")
+	os.Stdin.Read(b)
+	fmt.Printf("\nInputted: %s\n", b)
+
 	out.WriteShort(0xC0, 0, 0)
 	out.WriteShort(0x90, 60, Volume)
 	time.Sleep(1 * time.Second)
@@ -57,8 +78,8 @@ func main() {
 	out.WriteShort(0x90, 64, Volume)
 	time.Sleep(1 * time.Second)
 	out.WriteShort(0x80, 64, Volume)
-	time.Sleep(2 * time.Second)
-	
+	time.Sleep(1 * time.Second)
+
 	// t0 := portmidi.Timestamp(portmidi.Time())
 	// out.Write([]portmidi.Event{
 	// 	// Set up for pitch bends
