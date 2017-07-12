@@ -18,24 +18,26 @@ import (
 // Concisely on pitch bends: https://www.midikits.net/midi_analyser/pitch_bend.htm
 // Verbosely on pitch bends: http://www.infocellar.com/sound/midi/pitch-bends.htm
 
-const Volume = 127
+const VOLUME = 127
 
-func getTtyConfig() string {
-	ttyConfig, err := exec.Command("stty", "-F", "/dev/tty", "-g").Output()
+func execCmd(cmd *exec.Cmd) string {
+	out, err := cmd.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
-	return string(ttyConfig)
+	return string(out)
 }
 
 func main() {
 	fmt.Printf("Started at %v\n", time.Now().Format(time.RFC3339Nano))
 	portmidi.Initialize()
-	fmt.Printf("CountDevices: %v\n", portmidi.CountDevices())
-	fmt.Printf("DefaultInputDevice: %v\n", portmidi.DefaultInputDeviceID())
-	fmt.Printf("DefaultOutputDevice: %v\n", portmidi.DefaultOutputDeviceID())
+	fmt.Printf(
+		"portmidi CountDevices: %v DefaultInputDevice: %v DefaultOutputDevice: %v\n",
+		portmidi.CountDevices(),
+		portmidi.DefaultInputDeviceID(),
+		portmidi.DefaultOutputDeviceID())
 	for device := 0; device < portmidi.CountDevices(); device++ {
-		fmt.Printf("Info: %v %+v\n", device, portmidi.Info(portmidi.DeviceID(device)))
+		fmt.Printf("portmidi DeviceID: %v %+v\n", device, portmidi.Info(portmidi.DeviceID(device)))
 	}
 	// TODO: Instead of hardcoded 2, search the portmidi.Info for the
 	// first port which is not Midi Through Port-0 and
@@ -61,8 +63,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ttyOrig := getTtyConfig()
-	fmt.Printf("Original tty config: %s", ttyOrig)
+	ttyOrig := execCmd(exec.Command("stty", "-F", "/dev/tty", "-g"))
+	fmt.Printf("Original tty: %s", ttyOrig)
 	exec.Command("stty", "-F", "/dev/tty", "-icanon", "min", "1").Run()
 	defer exec.Command("stty", "-F", "/dev/tty", strings.TrimSpace(ttyOrig)).Run()
 	var b []byte = make([]byte, 1)
@@ -71,14 +73,13 @@ func main() {
 	fmt.Printf("\nInputted: %s\n", b)
 
 	out.WriteShort(0xC0, 0, 0)
-	out.WriteShort(0x90, 60, Volume)
+	out.WriteShort(0x90, 60, VOLUME)
 	time.Sleep(1 * time.Second)
-	out.WriteShort(0x80, 60, Volume)
+	out.WriteShort(0x80, 60, VOLUME)
 	time.Sleep(1 * time.Second)
-	out.WriteShort(0x90, 64, Volume)
+	out.WriteShort(0x90, 64, VOLUME)
 	time.Sleep(1 * time.Second)
-	out.WriteShort(0x80, 64, Volume)
-	time.Sleep(1 * time.Second)
+	out.WriteShort(0x80, 64, VOLUME)
 
 	// t0 := portmidi.Timestamp(portmidi.Time())
 	// out.Write([]portmidi.Event{
@@ -112,31 +113,31 @@ func main() {
 	// 		Timestamp: portmidi.Timestamp(t0),
 	// 		Status: 0x90,  // Note on, channel 0
 	// 		Data1: 60,  // C4
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// 	portmidi.Event {
 	// 		Timestamp: portmidi.Timestamp(t0+1000),
 	// 		Status: 0x91,  // Note on, channel 1
 	// 		Data1: 64,  // E4
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// 	portmidi.Event {
 	// 		Timestamp: portmidi.Timestamp(t0+1000),
 	// 		Status: 0x90,  // Note on, channel 0
 	// 		Data1: 67,  // G
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// 	portmidi.Event {
 	// 		Timestamp: portmidi.Timestamp(t0+1100),
 	// 		Status: 0x81,  // Note off
 	// 		Data1: 64,  // E
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// 	portmidi.Event {
 	// 		Timestamp: portmidi.Timestamp(t0+2000),
 	// 		Status: 0x80,  // Note off
 	// 		Data1: 60,  // C
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// 	portmidi.Event {
 	// 		Timestamp: portmidi.Timestamp(t0+2000),
@@ -154,7 +155,7 @@ func main() {
 	// 		Timestamp: portmidi.Timestamp(t0+3000),
 	// 		Status: 0x80,  // Note off
 	// 		Data1: 67,  // G
-	// 		Data2: Volume,
+	// 		Data2: VOLUME,
 	// 	},
 	// })
 	// time.Sleep(3 * time.Second)
