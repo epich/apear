@@ -18,6 +18,61 @@ import (
 // Concisely on pitch bends: https://www.midikits.net/midi_analyser/pitch_bend.htm
 // Verbosely on pitch bends: http://www.infocellar.com/sound/midi/pitch-bends.htm
 
+// Chroma is a musical note independent of octave.
+type Chroma int
+
+// Values are the same as the MIDI notes modulo 12
+const (
+	C  Chroma = iota // C natural
+	Cs               // C sharp
+	D
+	Ds
+	E
+	F
+	Fs
+	G
+	Gs
+	A
+	As
+	B
+)
+
+// Convert user inputted character to its intended chroma
+func InputToChroma(bytes []byte) Chroma {
+	switch instring := string(bytes); instring {
+	case "c":
+		return C
+	case "C":
+		return Cs
+	case "d":
+		return D
+	case "D":
+		return Ds
+	case "e":
+		return E
+	case "f":
+		return F
+	case "F":
+		return Fs
+	case "g":
+		return G
+	case "G":
+		return Gs
+	case "a":
+		return A
+	case "A":
+		return As
+	case "b":
+		return B
+	default:
+		// TODO: Return error code and have program continue
+		log.Fatal("Unrecognized input: %s", bytes)
+	}
+	return C
+}
+
+const NOTE_LOWER = A + 0*12
+const NOTE_UPPER = C + 7*12
 const VOLUME = 127
 
 func execCmd(cmd *exec.Cmd) string {
@@ -29,15 +84,14 @@ func execCmd(cmd *exec.Cmd) string {
 }
 
 func main() {
-	fmt.Printf("Started at %v\n", time.Now().Format(time.RFC3339Nano))
 	portmidi.Initialize()
-	fmt.Printf(
+	log.Printf(
 		"portmidi CountDevices: %v DefaultInputDevice: %v DefaultOutputDevice: %v\n",
 		portmidi.CountDevices(),
 		portmidi.DefaultInputDeviceID(),
 		portmidi.DefaultOutputDeviceID())
 	for device := 0; device < portmidi.CountDevices(); device++ {
-		fmt.Printf("portmidi DeviceID: %v %+v\n", device, portmidi.Info(portmidi.DeviceID(device)))
+		log.Printf("portmidi DeviceID: %v %+v\n", device, portmidi.Info(portmidi.DeviceID(device)))
 	}
 	// TODO: Instead of hardcoded 2, search the portmidi.Info for the
 	// first port which is not Midi Through Port-0 and
@@ -63,14 +117,19 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Put tty into mode making single byte input on stdin promptly available.
+	//
+	// TODO: Maybe use github.com/pkg/term to do this?
+	// TODO: Would like to change how input is shown. eg 'eF' -> 'E F#'
 	ttyOrig := execCmd(exec.Command("stty", "-F", "/dev/tty", "-g"))
-	fmt.Printf("Original tty: %s", ttyOrig)
+	log.Printf("Original tty: %s", ttyOrig)
 	exec.Command("stty", "-F", "/dev/tty", "-icanon", "min", "1").Run()
 	defer exec.Command("stty", "-F", "/dev/tty", strings.TrimSpace(ttyOrig)).Run()
 	var b []byte = make([]byte, 1)
 	fmt.Print("Enter text: ")
 	os.Stdin.Read(b)
-	fmt.Printf("\nInputted: %s\n", b)
+	fmt.Printf("\n")
+	log.Printf("Inputted: %s or %v\n", b, InputToChroma(b))
 
 	out.WriteShort(0xC0, 0, 0)
 	out.WriteShort(0x90, 60, VOLUME)
