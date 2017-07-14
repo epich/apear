@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,7 +26,7 @@ type Chroma int
 const (
 	C  Chroma = iota // C natural
 	Cs               // C sharp
-	D
+	D                // ...
 	Ds
 	E
 	F
@@ -37,7 +38,7 @@ const (
 	B
 )
 
-// Convert user inputted character to its intended chroma
+// Convert user inputted character to its intended chroma.
 func InputToChroma(bytes []byte) Chroma {
 	switch instring := string(bytes); instring {
 	case "c":
@@ -71,8 +72,15 @@ func InputToChroma(bytes []byte) Chroma {
 	return C
 }
 
+// Lowest musical note eligible to play
 const NOTE_LOWER = A + 0*12
+
+// Highest musical note eligible to play
 const NOTE_UPPER = C + 7*12
+
+// Volume (ie how loud) as passed to portmidi.
+//
+// NB: a flag to the MIDI synthesizer also affects volume.
 const VOLUME = 127
 
 func execCmd(cmd *exec.Cmd) string {
@@ -115,6 +123,19 @@ func main() {
 		0)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	total_queries := 0
+	correct_queries := 0
+	for {
+		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
+		log.Printf("Playing note: %v\n", note)
+		out.WriteShort(0x90, note, VOLUME)
+		time.Sleep(1 * time.Second)
+		out.WriteShort(0x80, note, VOLUME)
+		total_queries++
+		correct_queries++
 	}
 
 	// Put tty into mode making single byte input on stdin promptly available.
