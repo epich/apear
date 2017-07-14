@@ -170,9 +170,16 @@ func main() {
 	total_queries := 0
 	for {
 		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
-		out.WriteShort(0x90, note, VOLUME)
-		os.Stdin.Read(b)
-		out.WriteShort(0x80, note, VOLUME)
+		input_str := " "
+		for input_str == " " {
+			out.WriteShort(0x90, note, VOLUME)
+			go func(note int64) {
+				time.Sleep(1 * time.Second)
+				out.WriteShort(0x80, note, VOLUME)
+			}(note)
+			os.Stdin.Read(b)
+			input_str = string(b)
+		}
 		fmt.Printf("\n")
 		inputted_chroma := InputToChroma(b)
 		actual_chroma := Chroma(note%12)
@@ -181,8 +188,8 @@ func main() {
 		}
 		total_queries++
 		log.Printf(
-			"Inputted, actual are %v, %v%v. Correct/total is %v/%v\n",
-			inputted_chroma, actual_chroma, note/12, correct_queries, total_queries)
+			"Correct/total: %v/%v. Inputted, actual are %v, %v%v.\n",
+			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12)
 	}
 
 	out.WriteShort(0xC0, 0, 0)
