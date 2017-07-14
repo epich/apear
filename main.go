@@ -38,6 +38,36 @@ const (
 	B
 )
 
+func (chroma Chroma) String() string {
+  switch chroma {
+	case C:
+		return "C"
+	case Cs:
+		return "C#"
+	case D:
+		return "D"
+	case Ds:
+		return "D#"
+	case E:
+		return "E"
+	case F:
+		return "F"
+	case Fs:
+		return "F#"
+	case G:
+		return "G"
+	case Gs:
+		return "G#"
+	case A:
+		return "A"
+	case As:
+		return "A#"
+	case B:
+		return "B"
+	}
+	return ""
+}
+
 // Convert user inputted character to its intended chroma.
 func InputToChroma(bytes []byte) Chroma {
 	switch instring := string(bytes); instring {
@@ -130,7 +160,7 @@ func main() {
 	correct_queries := 0
 	for {
 		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
-		log.Printf("Playing note: %v\n", note)
+		log.Printf("Playing note: %v%v\n", Chroma(note%12), note/12)
 		out.WriteShort(0x90, note, VOLUME)
 		time.Sleep(1 * time.Second)
 		out.WriteShort(0x80, note, VOLUME)
