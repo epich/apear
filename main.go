@@ -155,19 +155,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	total_queries := 0
-	correct_queries := 0
-	for {
-		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
-		log.Printf("Playing note: %v%v\n", Chroma(note%12), note/12)
-		out.WriteShort(0x90, note, VOLUME)
-		time.Sleep(1 * time.Second)
-		out.WriteShort(0x80, note, VOLUME)
-		total_queries++
-		correct_queries++
-	}
-
 	// Put tty into mode making single byte input on stdin promptly available.
 	//
 	// TODO: Maybe use github.com/pkg/term to do this?
@@ -177,10 +164,26 @@ func main() {
 	exec.Command("stty", "-F", "/dev/tty", "-icanon", "min", "1").Run()
 	defer exec.Command("stty", "-F", "/dev/tty", strings.TrimSpace(ttyOrig)).Run()
 	var b []byte = make([]byte, 1)
-	fmt.Print("Enter text: ")
-	os.Stdin.Read(b)
-	fmt.Printf("\n")
-	log.Printf("Inputted: %s or %v\n", b, InputToChroma(b))
+
+	rand.Seed(time.Now().UnixNano())
+	correct_queries := 0
+	total_queries := 0
+	for {
+		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
+		out.WriteShort(0x90, note, VOLUME)
+		os.Stdin.Read(b)
+		out.WriteShort(0x80, note, VOLUME)
+		fmt.Printf("\n")
+		inputted_chroma := InputToChroma(b)
+		actual_chroma := Chroma(note%12)
+		if inputted_chroma == actual_chroma {
+			correct_queries++
+		}
+		total_queries++
+		log.Printf(
+			"Inputted, actual are %v, %v%v. Correct/total is %v/%v\n",
+			inputted_chroma, actual_chroma, note/12, correct_queries, total_queries)
+	}
 
 	out.WriteShort(0xC0, 0, 0)
 	out.WriteShort(0x90, 60, VOLUME)
