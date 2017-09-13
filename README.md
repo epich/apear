@@ -6,6 +6,8 @@ Install prerequisites:
     - Timidity++
       - sudo apt-get install timidity
       - Play MIDI-FILE: timidity MIDI-FILE
+      - Configure soundfont in /etc/timidity/timidity.cfg
+        - soundfont PATH-TO-SF2-FILE
       - Start as daemon: See synth.sh
       - Problems:
         - Scratchy sound

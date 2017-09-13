@@ -1,2 +1,3 @@
-#fluidsynth -a alsa -m alsa_seq -g2 -s -i /usr/share/sounds/sf2/FluidR3_GM.sf2
-timidity -iA -A100 -Os --quiet
+# Timbres of Heaven http://midkar.com/soundfonts/
+fluidsynth -a alsa -m alsa_seq -g0.5 -s -i /home/epich/soundfonts/Timbres\ Of\ Heaven\ GM_GS_XG_SFX\ V\ 3.4\ Final.sf2
+#timidity -iA -A100 -Os --quiet

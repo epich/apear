@@ -103,10 +103,10 @@ func InputToChroma(bytes []byte) Chroma {
 }
 
 // Lowest musical note eligible to play
-const NOTE_LOWER = A + 0*12
+const NOTE_LOWER = E + 2*12  // E1
 
 // Highest musical note eligible to play
-const NOTE_UPPER = C + 7*12
+const NOTE_UPPER = A + 7*12  // A6
 
 // Volume (ie how loud) as passed to portmidi.
 //
@@ -122,6 +122,7 @@ func execCmd(cmd *exec.Cmd) string {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	portmidi.Initialize()
 	log.Printf(
 		"portmidi CountDevices: %v DefaultInputDevice: %v DefaultOutputDevice: %v\n",
@@ -165,7 +166,6 @@ func main() {
 	defer exec.Command("stty", "-F", "/dev/tty", strings.TrimSpace(ttyOrig)).Run()
 	var b []byte = make([]byte, 1)
 
-	rand.Seed(time.Now().UnixNano())
 	correct_queries := 0
 	total_queries := 0
 	for {
@@ -174,7 +174,7 @@ func main() {
 		for input_str == " " {
 			out.WriteShort(0x90, note, VOLUME)
 			go func(note int64) {
-				time.Sleep(1 * time.Second)
+				time.Sleep(1000 * time.Millisecond)
 				out.WriteShort(0x80, note, VOLUME)
 			}(note)
 			os.Stdin.Read(b)
@@ -189,10 +189,10 @@ func main() {
 		total_queries++
 		log.Printf(
 			"Correct/total: %v/%v. Inputted, actual are %v, %v%v.\n",
-			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12)
+			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12 - 1)
 	}
 
-	out.WriteShort(0xC0, 0, 0)
+	out.WriteShort(0xC0, 1, 0)  // instrument 1
 	out.WriteShort(0x90, 60, VOLUME)
 	time.Sleep(1 * time.Second)
 	out.WriteShort(0x80, 60, VOLUME)
