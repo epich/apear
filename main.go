@@ -39,7 +39,7 @@ const (
 )
 
 func (chroma Chroma) String() string {
-  switch chroma {
+	switch chroma {
 	case C:
 		return "C"
 	case Cs:
@@ -103,10 +103,10 @@ func InputToChroma(bytes []byte) Chroma {
 }
 
 // Lowest musical note eligible to play
-const NOTE_LOWER = E + 2*12  // E1
+const NOTE_LOWER = int64(E + 2*12) // E1
 
 // Highest musical note eligible to play
-const NOTE_UPPER = A + 7*12  // A6
+const NOTE_UPPER = int64(A + 7*12) // A6
 
 // Volume (ie how loud) as passed to portmidi.
 //
@@ -169,7 +169,7 @@ func main() {
 	correct_queries := 0
 	total_queries := 0
 	for {
-		note := int64(NOTE_LOWER) + int64(rand.Intn(int(NOTE_UPPER-NOTE_LOWER)+1))
+		note := NOTE_LOWER + rand.Int63n(NOTE_UPPER-NOTE_LOWER+1)
 		input_str := " "
 		for input_str == " " {
 			out.WriteShort(0x90, note, VOLUME)
@@ -182,17 +182,17 @@ func main() {
 		}
 		fmt.Printf("\n")
 		inputted_chroma := InputToChroma(b)
-		actual_chroma := Chroma(note%12)
+		actual_chroma := Chroma(note % 12)
 		if inputted_chroma == actual_chroma {
 			correct_queries++
 		}
 		total_queries++
 		log.Printf(
 			"Correct/total: %v/%v. Inputted, actual are %v, %v%v.\n",
-			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12 - 1)
+			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12-1)
 	}
 
-	out.WriteShort(0xC0, 1, 0)  // instrument 1
+	out.WriteShort(0xC0, 1, 0) // instrument 1
 	out.WriteShort(0x90, 60, VOLUME)
 	time.Sleep(1 * time.Second)
 	out.WriteShort(0x80, 60, VOLUME)
