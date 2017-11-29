@@ -113,6 +113,10 @@ const NOTE_UPPER = int64(A + 7*12) // A6
 // NB: a flag to the MIDI synthesizer also affects volume.
 const VOLUME = 127
 
+func getRandInclusive(lo int64, hi int64) int64 {
+	return lo + rand.Int63n(hi-lo+1)
+}
+
 func execCmd(cmd *exec.Cmd) string {
 	out, err := cmd.Output()
 	if err != nil {
@@ -169,27 +173,33 @@ func main() {
 	correct_queries := 0
 	total_queries := 0
 	for {
-		note := NOTE_LOWER + rand.Int63n(NOTE_UPPER-NOTE_LOWER+1)
+		note0 := getRandInclusive(NOTE_LOWER+12, NOTE_UPPER-12)
+		note1 := getRandInclusive(note0-12, note0+12)
 		input_str := " "
 		for input_str == " " {
-			out.WriteShort(0x90, note, VOLUME)
-			go func(note int64) {
-				time.Sleep(1000 * time.Millisecond)
-				out.WriteShort(0x80, note, VOLUME)
-			}(note)
+			go func(note0, note1 int64) {
+				out.WriteShort(0x90, note0, VOLUME)
+				time.Sleep(500 * time.Millisecond)
+				out.WriteShort(0x80, note0, VOLUME)
+				out.WriteShort(0x90, note1, VOLUME)
+				time.Sleep(500 * time.Millisecond)
+				out.WriteShort(0x80, note1, VOLUME)
+			}(note0, note1)
 			os.Stdin.Read(b)
 			input_str = string(b)
 		}
 		fmt.Printf("\n")
 		inputted_chroma := InputToChroma(b)
-		actual_chroma := Chroma(note % 12)
+		actual_chroma := Chroma(note0 % 12)
 		if inputted_chroma == actual_chroma {
 			correct_queries++
 		}
 		total_queries++
 		log.Printf(
-			"Correct/total: %v/%v. Inputted, actual are %v, %v%v.\n",
-			correct_queries, total_queries, inputted_chroma, actual_chroma, note/12-1)
+			"Correct/total: %v/%v. Inputted, actual are %v, %v%v %v%v.\n",
+			correct_queries, total_queries,
+			inputted_chroma, actual_chroma, note0/12-1,
+			Chroma(note1%12), note1/12-1)
 	}
 
 	out.WriteShort(0xC0, 1, 0) // instrument 1
